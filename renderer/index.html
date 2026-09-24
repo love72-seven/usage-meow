@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'" />
+    <title>用量喵</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="topbar">
+        <div class="brand">
+          <img src="../assets/usage-meow-icon.png" alt="" width="24" height="24" />
+          <span>用量喵</span>
+        </div>
+        <span class="titlebar-caption">AI 编码用量工作台</span>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="sidebar">
+        <p class="nav-label">工作台</p>
+        <nav class="view-tabs" aria-label="主导航">
+          <button id="tab-usage" class="view-tab active" type="button" aria-label="用量概览" aria-pressed="true" aria-controls="usage-view" title="用量概览">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v7H4zM14 4h6v4h-6zM4 15h6v5H4zM14 12h6v8h-6z" /></svg><span>用量概览</span>
+          </button>
+          <button id="tab-models" class="view-tab" type="button" aria-label="模型明细" aria-pressed="false" aria-controls="models-view" title="模型明细">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5" /></svg><span>模型明细</span>
+          </button>
+          <button id="tab-accounts" class="view-tab" type="button" aria-label="账号中心" aria-pressed="false" aria-controls="accounts-view" title="账号中心">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg><span>账号中心</span>
+          </button>
+          <button id="tab-agents" class="view-tab" type="button" aria-label="Agent 接入" aria-pressed="false" aria-controls="agents-view" title="Agent 接入"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="3"/><path d="M12 3v4M8 12h1m6 0h1M8 16h8"/></svg><span>Agent 接入</span></button>
+          <button id="tab-prices" class="view-tab" type="button" aria-label="价格目录" aria-pressed="false" aria-controls="prices-view" title="价格目录"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 12h8M8 17h5"/></svg><span>价格目录</span></button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="local-indicator"><span class="status-dot"></span><span>本机工作区</span></div>
+          <p>日志留在本机<br />账号只读接入</p>
+          <span class="version-label">v0.5.0</span>
+        </div>
+      </aside>
+
+      <main class="app-main">
+        <header class="view-toolbar">
+          <div class="page-heading">
+            <h1 id="page-title">用量概览</h1>
+            <p id="page-description">本机日志中的消耗与趋势</p>
+          </div>
+          <div class="toolbar">
+            <span id="last-updated" class="muted" role="status">正在准备…</span>
+            <button id="refresh" class="refresh-button" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 3M4 16l2 3a7 7 0 0 0 12-2" /></svg>
+              <span id="refresh-label">刷新用量</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="view-deck">
+          <div id="usage-sourcebar" class="usage-sourcebar">
+            <div class="source-controls">
+              <label for="usage-source">Codex 统计目录</label>
+              <select id="usage-source" aria-describedby="source-note" disabled><option>正在识别目录…</option></select>
+              <button id="choose-usage-source" class="text-button" type="button" disabled>选择目录</button>
+            </div>
+            <p id="source-note">仅影响本机 Codex 日志统计，不切换登录账号。</p>
+            <div class="pricing-controls"><span id="pricing-status" role="status">正在读取价格表…</span><button id="sync-pricing" class="text-button" type="button">立即同步价格</button></div>
+            <details class="pricing-info"><summary>价格来源与估算口径</summary><p>OpenAI 官方公开定价优先，其他模型使用 LiteLLM 公开价格表。运行期间每小时检查；发现缺价时额外检查，失败会限频重试。仅下载公开价格，不上传日志或账户信息。</p><p id="pricing-sources"></p><p>按当前可用单价重算历史日志，不代表历史账单。长上下文、Fast、区域及自定义渠道计费受日志和 ccusage 支持范围限制，金额仍是估算。未知模型不计入金额，须查看缺价提示。</p></details>
+          </div>
+          <section id="usage-view" class="view-scroll" aria-labelledby="page-title" tabindex="0">
+            <div class="view-content">
+              <div id="state" class="state loading" role="status"><span class="spinner"></span><span id="state-text">正在读取本机日志…</span></div>
+              <section class="summary-grid" aria-label="用量摘要">
+                <article class="metric-card today-metric">
+                  <span class="metric-label">今日估算成本 <span class="unit-label">USD</span></span>
+                  <strong id="today-cost">—</strong>
+                  <span id="today-date" class="metric-footnote">—</span>
+                </article>
+                <article class="metric-card"><span class="metric-label">30 天估算成本</span><strong id="month-cost">—</strong><span class="metric-footnote">按公开 API 价格估算</span></article>
+                <article class="metric-card"><span class="metric-label">30 天 Token</span><strong id="month-tokens">—</strong><span class="metric-footnote">输入、输出与缓存合计</span></article>
+                <article class="metric-card"><span class="metric-label">活跃天数</span><strong id="active-days">—</strong><span class="metric-footnote">最近 30 天</span></article>
+              </section>
+
+              <section class="panel agent-overview"><div class="panel-heading"><div><h2>各 Agent 用量</h2><p>最近 30 天 · Token 已统计不代表价格已匹配</p></div><button id="open-agent-center" class="text-button" type="button">管理接入</button></div><div id="agent-overview-rows" class="agent-overview-list"></div></section>
+              <section class="content-grid">
+                <article class="panel chart-panel">
+                  <div class="panel-heading"><div><h2>消耗趋势</h2><p>最近 14 天，每日估算成本</p></div><div class="chart-sum"><span>区间合计</span><strong id="chart-total">—</strong></div></div>
+                  <div id="chart" class="chart empty" role="img" aria-label="最近 14 天每日成本柱状图"><span>暂无数据</span></div>
+                  <div class="chart-caption"><span><i class="legend-swatch"></i>每日成本（USD）</span><span>本地时区</span></div>
+                </article>
+                <article class="panel recent-panel">
+                  <div class="panel-heading"><div><h2>用量记录</h2><p id="recent-description">最近 7 个有记录的日期</p></div><button id="show-all-records" type="button" class="text-button" aria-expanded="false">查看全部</button></div>
+                  <div class="table-wrap"><table><thead><tr><th scope="col">日期</th><th scope="col" class="numeric">Token</th><th scope="col" class="numeric">成本</th></tr></thead><tbody id="recent-rows"><tr><td colspan="3" class="empty-cell">等待加载…</td></tr></tbody></table></div>
+                </article>
+              </section>
+              <div class="context-note"><span class="note-mark" aria-hidden="true">i</span><p>这里的金额是估算成本，不是订阅余额。查看模型分布请打开“模型明细”，查看账号额度请打开“账号中心”。</p></div>
+            </div>
+          </section>
+
+          <section id="models-view" class="view-scroll" aria-labelledby="page-title" tabindex="0" hidden>
+            <div class="view-content">
+              <div id="models-state" class="state" role="status"></div>
+              <section class="panel breakdown-panel" aria-label="Agent 与模型用量">
+                <div class="model-filters">
+                  <label class="search-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input id="model-search" type="search" placeholder="搜索模型名称" aria-label="搜索模型名称" /></label>
+                  <label class="filter-label">Agent <select id="agent-filter"><option value="">全部</option></select></label>
+                  <span id="model-count" class="muted">等待加载</span>
+                </div>
+                <div class="table-wrap model-table-wrap"><table><thead><tr><th scope="col">Agent</th><th scope="col">模型</th><th scope="col" class="numeric">输入</th><th scope="col" class="numeric">输出</th><th scope="col" class="numeric">缓存读 / 写</th><th scope="col" class="numeric">估算成本</th></tr></thead><tbody id="model-rows"><tr><td colspan="6" class="empty-cell">等待加载…</td></tr></tbody></table></div>
+                <div class="table-caption">最近 30 天，按估算成本从高到低排列。</div>
+              </section>
+              <div class="context-note"><span class="note-mark" aria-hidden="true">i</span><p>来源是本机日志。Agent 表示编码工具来源，历史记录的账号归属尚未确认；模型金额不是订阅实际扣费。</p></div>
+            </div>
+          </section>
+
+          <section id="agents-view" class="view-scroll" aria-labelledby="page-title" tabindex="0" hidden>
+            <div class="view-content">
+              <div id="agents-message" class="state" role="status"></div>
+              <div class="section-intro"><p id="agents-summary">正在检测支持的 Agent…</p><p>支持默认目录识别与手动选择。只读用量日志，不修改 Agent 登录；不存在的目录不等于未安装。</p></div>
+              <div id="agent-cards" class="agent-cards"></div>
+            </div>
+          </section>
+          <section id="prices-view" class="view-scroll" aria-labelledby="page-title" tabindex="0" hidden>
+            <div class="view-content">
+              <div id="prices-message" class="state" role="status"></div>
+              <div class="section-intro"><p>厂商、渠道分开列出 · 美元 / 100 万 Token</p><p>公开 API 参考价，不是订阅扣费。未提供的缓存价格显示为“—”，不会当作免费。</p></div>
+              <section class="panel price-binding-panel"><h2>为日志模型选择参考价</h2><div class="binding-controls"><select id="binding-model" aria-label="选择日志模型"><option value="">先选择日志中的模型</option></select><span id="binding-choice">再从下方目录选择价格条目</span><button id="apply-price-binding" class="secondary-button" type="button" disabled>应用参考价</button><button id="clear-price-binding" class="text-button" type="button">清除单独匹配</button></div><p class="profile-help">仅作用于所选 Agent 和模型，不改变 API 配置。不同渠道请分别选择；厂商默认参考可在 Agent 接入页设置。</p></section>
+              <section class="panel">
+                <div class="model-filters"><label class="search-field"><input id="price-search" type="search" placeholder="搜索模型、厂商或渠道" aria-label="搜索价格目录" /></label><label class="filter-label">厂商 <select id="price-provider"><option value="">全部厂商</option></select></label><span id="price-count" class="muted"></span></div>
+                <div class="table-wrap"><table class="price-table"><thead><tr><th>厂商 / 渠道</th><th>模型条目</th><th class="numeric">输入</th><th class="numeric">输出</th><th class="numeric">缓存读</th><th>来源 / 匹配</th></tr></thead><tbody id="price-rows"></tbody></table></div>
+                <div class="price-pagination"><button id="price-prev" class="text-button" type="button">上一页</button><span id="price-page" class="muted"></span><button id="price-next" class="text-button" type="button">下一页</button></div>
+              </section>
+            </div>
+          </section>
+          <section id="accounts-view" class="view-scroll" aria-labelledby="page-title" tabindex="0" hidden>
+            <div class="view-content">
+              <div class="account-page-meta"><span id="account-notice" role="status">正在检测本机 Codex 配置…</span><span id="device-name" class="device-pill">本机</span></div>
+              <div class="account-layout">
+                <aside class="panel profile-panel">
+                  <div class="panel-heading"><h2>登录来源</h2><span id="profile-count" class="muted">—</span></div>
+                  <div id="profile-list"></div>
+                  <div class="profile-actions"><button id="add-profile" class="secondary-button full-width" type="button">＋ 接入配置目录</button><button id="choose-codex" class="text-button full-width" type="button">选择 Codex 程序</button></div>
+                  <p class="profile-help">每项对应一套 Codex 配置，不代表正在运行的 Agent 数量。</p>
+                </aside>
+
+                <div id="account-details" hidden>
+                  <article class="panel identity-panel">
+                    <div class="panel-heading"><div class="identity-title"><span class="account-avatar" aria-hidden="true">C</span><div><h2 id="account-email">—</h2><p id="account-plan">—</p></div></div><button id="toggle-identity" class="text-button" type="button" aria-pressed="false">显示账号</button></div>
+                    <div class="identity-meta"><span id="account-status" class="status-pill">正在查询</span><span id="account-checked" class="muted">—</span></div>
+                    <details class="profile-settings"><summary>配置与备注</summary><div class="profile-path" id="profile-path"></div><div class="profile-edit"><input id="profile-name" aria-label="配置备注" maxlength="60" placeholder="给这个配置起个名字" /><button id="rename-profile" class="secondary-button" type="button">保存备注</button><button id="remove-profile" class="text-button danger" type="button">移除接入</button></div><p>只修改用量喵中的记录，不切换账号，不删除 Codex 配置。</p></details>
+                  </article>
+                  <div id="account-error" class="account-notice" role="status" hidden></div>
+                  <section class="account-metrics" aria-label="官方 Token 汇总">
+                    <article class="metric-card"><span class="metric-label">今日 Token</span><strong id="account-today">—</strong><span id="account-today-note" class="metric-footnote">等待官方数据</span></article>
+                    <article class="metric-card"><span class="metric-label">累计 Token</span><strong id="account-lifetime">—</strong><span class="metric-footnote">官方汇总，不是本机日志合计</span></article>
+                  </section>
+                  <article class="panel quota-panel"><div class="panel-heading"><div><h2>剩余额度</h2><p>账号共享额度，按官方返回的窗口展示</p></div><span class="source-pill">官方</span></div><div id="quota-list"><p class="muted">等待查询…</p></div></article>
+                  <article class="panel daily-account-panel"><div class="panel-heading"><div><h2>每日 Token 记录</h2><p>最近 14 条记录，日期以官方返回为准</p></div></div><div class="table-wrap"><table><thead><tr><th scope="col">日期</th><th scope="col" class="numeric">Token</th></tr></thead><tbody id="account-daily"></tbody></table></div></article>
+                  <details class="panel history-panel"><summary>登录信息变化记录 <span id="history-count" class="muted"></span></summary><p class="profile-help">仅记录刷新时观察到的变化，不是完整登录审计，也不用于推算历史用量。</p><div id="account-history"></div></details>
+                </div>
+              </div>
+              <details class="account-boundary"><summary>统计范围与接入说明</summary><p>读取所选配置的登录状态，不保证与其他正在运行的客户端一致。官方数据不等于本机用量；未接入其他设备，不显示跨设备拆分。历史日志不会自动归到当前账号。</p><p id="account-binary" class="binary-path">Codex 程序：检测中</p></details>
+            </div>
+          </section>
+        </div>
+
+        <footer class="statusbar"><span id="data-source">ccusage 本机日志 · 成本为估算值</span><span class="auto-refresh-label"><span class="status-dot"></span>每 5 分钟自动刷新</span></footer>
+      </main>
+    </div>
+    <script src="./usage-model.js"></script>
+    <script src="./account-model.js"></script>
+    <script src="./renderer.js"></script>
+    <script src="./agent-prices.js"></script>
+    <script src="./accounts.js"></script>
+  </body>
+</html>
