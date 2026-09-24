@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { summarize } = require('../renderer/usage-model');
+const { summarize, dailyBreakdown } = require('../renderer/usage-model');
 const { UsageService } = require('../usage-service');
 
 test('today stays zero when latest data is yesterday; chart has 14 calendar days', () => {
@@ -29,6 +29,28 @@ test('30-day window ignores older/future/malicious dates and aggregates same-day
 test('empty report is valid; malformed report is rejected', () => {
   assert.equal(summarize({ daily: [] }).cost, 0);
   assert.throws(() => summarize({ nonsense: [] }));
+});
+
+test('daily model detail keeps Agents separate, sums token buckets and preserves partial pricing', () => {
+  const payload = { daily: [
+    { date: '2026-09-22', agents: [
+      { agent: 'codex', modelBreakdowns: [
+        { modelName: 'shared', inputTokens: 10, outputTokens: 2, cacheReadTokens: 30, cacheCreationTokens: 4, cost: 0.123456 },
+        { modelName: 'shared', inputTokens: 5, outputTokens: 3, cost: 0.000001, missingPricing: true },
+      ] },
+      { agent: 'zcode', modelBreakdowns: [{ modelName: 'shared', inputTokens: 20, outputTokens: 1, cost: 0.5 }] },
+    ] },
+    { date: '2026-09-21', agents: [{ agent: 'codex', modelBreakdowns: [{ modelName: 'old', inputTokens: 99 }] }] },
+  ] };
+  const rows = dailyBreakdown(payload, '2026-09-22', new Date(2026, 8, 22));
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].agent, 'zcode');
+  assert.equal(rows[1].agent, 'codex');
+  assert.equal(rows[1].tokens, 54);
+  assert.equal(rows[1].cost, 0.123457);
+  assert.equal(rows[1].unpriced, true);
+  assert.equal(dailyBreakdown(payload, '2026-09-23', new Date(2026, 8, 22)).length, 0);
+  assert.equal(dailyBreakdown(payload, '2026-08-22', new Date(2026, 8, 22)).length, 0);
 });
 
 test('concurrent refreshes share a process and release it for later retries', async () => {

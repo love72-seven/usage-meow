@@ -234,6 +234,36 @@ class PricingCatalog {
     return Object.keys(this.references.config(snapshot?.models || {})).filter((agent) => present.has(agent));
   }
 
+  unitPrices(data, snapshot = this.snapshot) {
+    const models = snapshot?.models || {};
+    const results = Object.create(null);
+    const providers = this.references.store.providers;
+    const bindings = this.references.store.bindings;
+    for (const day of data.daily || []) for (const agent of day.agents || []) {
+      for (const model of agent.modelBreakdowns || []) {
+        const agentName = agent.agent;
+        const modelName = model.modelName;
+        if (typeof agentName !== 'string' || typeof modelName !== 'string') continue;
+        const identity = JSON.stringify([agentName, modelName]);
+        if (results[identity]) continue;
+        const channelSelected = Boolean(providers[agentName])
+          || bindings.some((entry) => entry.agent === agentName && entry.model === modelName);
+        const reference = this.references.resolve(models, agentName, modelName);
+        const key = reference || (!channelSelected && Object.hasOwn(models, modelName) ? modelName : null);
+        if (!key) continue;
+        const entry = models[key];
+        const prices = { ...entry.prices };
+        if (agentName === 'zcode' && entry.provider === 'zai') {
+          prices.cacheCreationInputTokenCost = prices.inputCostPerToken;
+        }
+        results[identity] = { key, provider: PROVIDERS[entry.provider] || entry.provider,
+          source: entry.source, url: entry.url, checkedAt: entry.checkedAt,
+          specialTiers: entry.specialTiers, prices, match: reference ? 'agent' : 'catalog' };
+      }
+    }
+    return results;
+  }
+
   async referenceSettings() {
     await this.ready;
     return { ...this.references.store, observed: [...this.references.observed.values()].map((entry) => ({ ...entry,

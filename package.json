@@ -1,6 +1,6 @@
 {
   "name": "usage-meow",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "用量喵：打开即查看本机 AI 编码助手用量",
   "main": "main.js",
   "scripts": {
@@ -20,16 +20,41 @@
     "appId": "com.local.usage-meow",
     "productName": "用量喵",
     "afterPack": "build/create-uninstall-manifest.cjs",
-    "files": ["main.js", "preload.js", "usage-service.js", "usage-sources.js", "agent-sources.js", "report-merge.js", "pricing-catalog.js", "pricing-resolver.js", "pricing-seed.json", "account-service.js", "codex-client.js", "ui-smoke.js", "renderer/**", "assets/*.png", "assets/*.ico", "package.json"],
+    "files": [
+      "main.js",
+      "preload.js",
+      "usage-service.js",
+      "usage-sources.js",
+      "agent-sources.js",
+      "report-merge.js",
+      "pricing-catalog.js",
+      "pricing-resolver.js",
+      "pricing-seed.json",
+      "account-service.js",
+      "codex-client.js",
+      "ui-smoke.js",
+      "renderer/**",
+      "assets/*.png",
+      "assets/*.ico",
+      "package.json"
+    ],
     "extraResources": [
-      { "from": "node_modules/@ccusage/ccusage-win32-x64/bin/ccusage.exe", "to": "ccusage.exe" }
+      {
+        "from": "node_modules/@ccusage/ccusage-win32-x64/bin/ccusage.exe",
+        "to": "ccusage.exe"
+      }
     ],
     "win": {
-      "target": ["portable", "nsis"],
+      "target": [
+        "portable",
+        "nsis"
+      ],
       "icon": "assets/usage-meow-icon.ico",
       "signExecutable": false
     },
-    "portable": { "artifactName": "用量喵-${version}-便携版.exe" },
+    "portable": {
+      "artifactName": "用量喵-${version}-便携版.exe"
+    },
     "nsis": {
       "artifactName": "用量喵-${version}-安装包.exe",
       "oneClick": false,

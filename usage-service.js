@@ -74,7 +74,8 @@ class UsageService {
       const report = await this.read(source, agents, scopedPrices, timezone);
       data = replaceAgentReport(data, agent, report);
     }
-    const result = { ok: true, data, source, agents: agents?.entries || [], agentFingerprint: agents?.fingerprint || null,
+    const result = { ok: true, data, unitPrices: this.pricing?.unitPrices?.(data, prices?.snapshot) || {},
+      source, agents: agents?.entries || [], agentFingerprint: agents?.fingerprint || null,
       pricing: prices?.status || null, timezone, updatedAt: new Date().toISOString(), elapsedMs: Date.now() - startedAt };
     this.pricing?.observeMissing(data.totals?.unpricedModels);
     try {

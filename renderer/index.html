@@ -37,7 +37,7 @@
         <div class="sidebar-bottom">
           <div class="local-indicator"><span class="status-dot"></span><span>本机工作区</span></div>
           <p>日志留在本机<br />账号只读接入</p>
-          <span class="version-label">v0.5.0</span>
+          <span class="version-label">v0.6.0</span>
         </div>
       </aside>
 
@@ -79,6 +79,16 @@
                 <article class="metric-card"><span class="metric-label">30 天估算成本</span><strong id="month-cost">—</strong><span class="metric-footnote">按公开 API 价格估算</span></article>
                 <article class="metric-card"><span class="metric-label">30 天 Token</span><strong id="month-tokens">—</strong><span class="metric-footnote">输入、输出与缓存合计</span></article>
                 <article class="metric-card"><span class="metric-label">活跃天数</span><strong id="active-days">—</strong><span class="metric-footnote">最近 30 天</span></article>
+              </section>
+
+              <section class="panel daily-detail-panel" aria-labelledby="daily-detail-title">
+                <div class="panel-heading daily-detail-heading">
+                  <div><h2 id="daily-detail-title">今天消耗明细</h2><p id="daily-detail-description">按 Agent 与模型拆分 · 本机日志 · 本地日期</p></div>
+                  <label class="filter-label" for="daily-detail-date">查看日期 <select id="daily-detail-date" aria-label="选择消耗日期"><option value="">今天</option></select></label>
+                </div>
+                <div id="daily-detail-summary" class="daily-detail-summary" role="status">正在读取今日明细…</div>
+                <div id="daily-detail-rows" class="daily-detail-rows"></div>
+                <p class="daily-detail-note">单价为公开 API 参考价（USD / 100 万 Token），金额以本机日志工具的估算结果为准；长上下文、Fast、渠道或自定义价格可能使金额与单价直接相乘不一致。未提供的单价不代表免费。</p>
               </section>
 
               <section class="panel agent-overview"><div class="panel-heading"><div><h2>各 Agent 用量</h2><p>最近 30 天 · Token 已统计不代表价格已匹配</p></div><button id="open-agent-center" class="text-button" type="button">管理接入</button></div><div id="agent-overview-rows" class="agent-overview-list"></div></section>
@@ -170,6 +180,7 @@
     <script src="./usage-model.js"></script>
     <script src="./account-model.js"></script>
     <script src="./renderer.js"></script>
+    <script src="./daily-detail.js"></script>
     <script src="./agent-prices.js"></script>
     <script src="./accounts.js"></script>
   </body>

@@ -44,6 +44,20 @@ async function runUiSmoke(window, { output, fixtureMode }) {
     select('#tab-usage').click();
     checks.sourceVisible = !select('#usage-sourcebar').hidden && select('#usage-source').options.length > 0;
     checks.pricingVisible = Boolean(select('#pricing-status').textContent) && Boolean(select('#sync-pricing'));
+    checks.dailyDetailVisible = Boolean(select('.daily-detail-panel'))
+      && select('#daily-detail-title').textContent.includes('今天消耗明细');
+    if (useFixture) {
+      checks.dailyDetailModels = select('#daily-detail-rows').children.length === 36;
+      checks.dailyDetailRate = select('#daily-detail-rows').textContent.includes('$1.00 / 百万');
+      checks.dailyDetailTotal = select('#daily-detail-rows').textContent.includes('$45.00');
+      const dates = select('#daily-detail-date');
+      dates.value = dates.options[1].value;
+      dates.dispatchEvent(new Event('change'));
+      checks.dailyDetailDateSwitch = select('#daily-detail-title').textContent.includes(dates.value)
+        && select('#daily-detail-rows').textContent.includes('尚无可显示');
+      dates.value = dates.options[0].value;
+      dates.dispatchEvent(new Event('change'));
+    }
     const rowsBefore = select('#recent-rows').children.length;
     select('#show-all-records').click();
     checks.expandRecords = select('#recent-rows').children.length >= rowsBefore;

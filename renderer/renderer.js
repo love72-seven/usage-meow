@@ -132,6 +132,7 @@ function render(payload) {
     chart.append(group);
   }
   renderRecent();
+  window.renderDailyDetail?.();
   window.renderAgentOverview?.();
   return summary;
 }
@@ -143,7 +144,16 @@ function renderRecent() {
   body.replaceChildren();
   for (const row of showAllRecords ? summary.rows : summary.rows.slice(0, 7)) {
     const tr = document.createElement('tr');
-    for (const value of [row.date, formatNumber(row.tokens), formatMoney(row.cost)]) {
+    const dateCell = document.createElement('td');
+    const dateButton = document.createElement('button');
+    dateButton.className = 'recent-date-button';
+    dateButton.type = 'button';
+    dateButton.textContent = row.date;
+    dateButton.title = `查看 ${row.date} 模型消耗明细`;
+    dateButton.addEventListener('click', () => window.selectDailyDetailDate?.(row.date));
+    dateCell.append(dateButton);
+    tr.append(dateCell);
+    for (const value of [formatNumber(row.tokens), formatMoney(row.cost)]) {
       const cell = document.createElement('td');
       cell.textContent = value;
       tr.append(cell);
@@ -186,6 +196,7 @@ async function changeUsageSource(home) {
     renderSources(result.value);
     if (result.canceled) return;
     // Never display one directory's totals beneath another directory's label.
+    window.latestUsageReport = null;
     render({ daily: [] });
     for (const id of ['today-cost', 'month-cost', 'month-tokens', 'active-days']) $(`#${id}`).textContent = '—';
     loaded = false;
@@ -210,8 +221,8 @@ async function loadUsage() {
   try {
     const result = await window.ccusage.load();
     if (!result.ok) throw new Error(result.error);
-    const summary = render(result.data);
     window.latestUsageReport = result;
+    const summary = render(result.data);
     window.onUsageReport?.(result);
     appliedPriceRevision = result.pricing?.revision || null;
     loaded = true;
@@ -283,6 +294,7 @@ $('#refresh').addEventListener('click', () => window.activeView === 'accounts' ?
     renderSources(settings.value);
     const cache = await window.ccusage.cached();
     if (cache?.ok) {
+      window.latestUsageReport = cache;
       render(cache.data);
       loaded = true;
       window.updateViewStatus('usage', `缓存 ${new Date(cache.updatedAt).toLocaleString('zh-CN')}`);

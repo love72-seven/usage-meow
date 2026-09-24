@@ -58,6 +58,39 @@
     }
     return [...models.values()].sort((a, b) => b.cost - a.cost || a.model.localeCompare(b.model));
   }
+  function dailyBreakdown(payload, date, now = new Date()) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+    const windowDates = new Set(Array.from({ length: 30 }, (_, index) => {
+      const day = new Date(now);
+      day.setDate(now.getDate() - index);
+      return localDate(day);
+    }));
+    if (!windowDates.has(date)) return [];
+    const rows = new Map();
+    const globallyUnpriced = new Set(payload.totals?.unpricedModels || []);
+    for (const day of payload.daily || []) {
+      if ((day.date ?? day.period) !== date) continue;
+      for (const agent of Array.isArray(day.agents) ? day.agents : []) {
+        for (const model of Array.isArray(agent.modelBreakdowns) ? agent.modelBreakdowns : []) {
+          const agentName = String(agent.agent || '未知 Agent');
+          const modelName = String(model.modelName || '未知模型');
+          const key = JSON.stringify([agentName, modelName]);
+          const row = rows.get(key) || { agent: agentName, model: modelName, input: 0, output: 0,
+            cacheRead: 0, cacheWrite: 0, cost: 0, unpriced: false };
+          row.input += number(model.inputTokens);
+          row.output += number(model.outputTokens);
+          row.cacheRead += number(model.cacheReadTokens);
+          row.cacheWrite += number(model.cacheCreationTokens);
+          row.cost += number(model.cost ?? model.totalCost);
+          row.unpriced ||= typeof model.missingPricing === 'boolean' ? model.missingPricing : globallyUnpriced.has(modelName);
+          rows.set(key, row);
+        }
+      }
+    }
+    return [...rows.values()].map((row) => ({ ...row,
+      tokens: row.input + row.output + row.cacheRead + row.cacheWrite }))
+      .sort((a, b) => b.cost - a.cost || b.tokens - a.tokens || a.model.localeCompare(b.model));
+  }
   function agents(payload, now = new Date()) {
     const dates = new Set(summarize(payload, now).rows.map((row) => row.date));
     const today = localDate(now);
@@ -82,7 +115,7 @@
     }
     return [...results.values()].map((row) => ({ ...row, models: [...row.models], missing: [...row.missing] })).sort((a, b) => b.tokens - a.tokens);
   }
-  const api = { summarize, localDate, breakdown, agents };
+  const api = { summarize, localDate, breakdown, dailyBreakdown, agents };
   if (typeof module !== 'undefined') module.exports = api;
   else root.usageModel = api;
 })(globalThis);

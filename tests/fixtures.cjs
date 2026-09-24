@@ -17,12 +17,19 @@ const data = {
   daily: dates.map((period, index) => ({
     period,
     totalTokens: 4000000 + index * 125000,
-    totalCost: [12.87, 8.42, 20.8, 32.1, 18.6, 24.7, 10.2][index % 7],
+    totalCost: index === 0 ? 832.5 : [12.87, 8.42, 20.8, 32.1, 18.6, 24.7, 10.2][index % 7],
     agents: index === 0 ? [
       { agent: 'codex', modelBreakdowns: models.slice(0, 24) },
       { agent: 'pi', modelBreakdowns: models.slice(24) },
     ] : [],
   })),
+};
+const unitPrices = {
+  [JSON.stringify(['codex', 'example-model-01'])]: {
+    key: 'example-model-01', provider: '演示厂商', source: 'litellm', match: 'catalog',
+    prices: { inputCostPerToken: 1e-6, outputCostPerToken: 2e-6,
+      cacheReadInputTokenCost: 0.1e-6, cacheCreationInputTokenCost: 1.5e-6 },
+  },
 };
 const profiles = [
   { id: 'default', name: '默认 Codex 配置', home: 'C:\\Users\\Demo\\.codex' },
@@ -44,7 +51,8 @@ module.exports = {
   usage: { load: async () => {
     const snapshot = structuredClone(data);
     data.daily[0].totalCost += 1;
-    return { ok: true, data: snapshot, updatedAt: new Date().toISOString() };
+    data.daily[0].agents[0].modelBreakdowns[0].cost += 1;
+    return { ok: true, data: snapshot, unitPrices, updatedAt: new Date().toISOString() };
   }, cached: async () => null, stop() {} },
   accounts: { settings: async () => ({ ...payload, results: undefined }), load: async () => payload, stop() {} },
 };

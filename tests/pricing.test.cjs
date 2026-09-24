@@ -76,6 +76,26 @@ test('sync coalesces, official wins, future models appear and only fixed public 
   assert.equal(validSnapshot(JSON.parse(await fs.readFile(path.join(cwd, 'pricing-catalog-v1.json')))), true);
 });
 
+test('unit prices respect Agent channel and report the frozen catalogue reference', async (t) => {
+  const { catalog } = await setup(t);
+  await catalog.ready;
+  const base = { inputCostPerToken: 2e-6, outputCostPerToken: 10e-6 };
+  catalog.snapshot = { models: {
+    'gpt-6-sol': { provider: 'openai', source: 'openai', url: SOURCES.openai, checkedAt: '2026-09-22', prices: base },
+    'zai/glm-5.3': { provider: 'zai', source: 'litellm', url: SOURCES.litellm, checkedAt: '2026-09-22',
+      prices: { inputCostPerToken: 1e-6, outputCostPerToken: 4e-6 } },
+  } };
+  const data = { daily: [{ agents: [
+    { agent: 'codex', modelBreakdowns: [{ modelName: 'gpt-6-sol' }] },
+    { agent: 'zcode', modelBreakdowns: [{ modelName: 'glm-5.3' }, { modelName: 'gpt-6-sol' }] },
+  ] }] };
+  const references = catalog.unitPrices(data);
+  assert.equal(references[JSON.stringify(['codex', 'gpt-6-sol'])].prices.inputCostPerToken, 2e-6);
+  assert.equal(references[JSON.stringify(['zcode', 'glm-5.3'])].prices.cacheCreationInputTokenCost, 1e-6);
+  assert.equal(references[JSON.stringify(['zcode', 'glm-5.3'])].match, 'agent');
+  assert.equal(references[JSON.stringify(['zcode', 'gpt-6-sol'])], undefined);
+});
+
 test('network failure preserves good cache across restarts; retry cooldown prevents request loops', async (t) => {
   let clock = 1800000000000;
   const { catalog, cwd } = await setup(t, { now: () => clock });
